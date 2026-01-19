@@ -64,32 +64,30 @@
             align-items: center;
         }
         
+        /* ESTILOS DEL LOGO MEJORADOS */
         .logo {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 15px;
         }
         
-        .logo i {
-            font-size: 2rem;
-            background: var(--shine);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            animation: shine 3s infinite;
+        .logo-img {
+            height: 50px;
+            width: auto;
+            max-width: 150px;
+            object-fit: contain;
+            transition: transform 0.3s ease;
         }
         
-        @keyframes shine {
-            0% {
-                background-position: -100% 0;
-            }
-            100% {
-                background-position: 200% 0;
-            }
+        .logo-img:hover {
+            transform: scale(1.05);
         }
         
         .logo h1 {
             font-size: 1.8rem;
             font-weight: 800;
+            color: white;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
         }
         
         /* Hero Section */
@@ -672,6 +670,19 @@
             .header-container {
                 flex-direction: column;
                 gap: 1rem;
+                text-align: center;
+            }
+            
+            .logo {
+                justify-content: center;
+            }
+            
+            .logo-img {
+                height: 40px;
+            }
+            
+            .logo h1 {
+                font-size: 1.5rem;
             }
             
             .hero h2 {
@@ -680,6 +691,7 @@
             
             .admin-nav {
                 flex-wrap: wrap;
+                justify-content: center;
             }
             
             .login-card {
@@ -1678,7 +1690,7 @@
     <header>
         <div class="container header-container">
             <div class="logo">
-                <i class="fas fa-glass-cheers"></i>
+                <img src="logosalon.png" alt="Logotipo Salón Azul" class="logo-img">
                 <h1>Salón Azul</h1>
             </div>
         </div>
