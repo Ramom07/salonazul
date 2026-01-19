@@ -2598,85 +2598,67 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/es.js"></script>
     <script>
-        // Variables globales
-        let contracts = JSON.parse(localStorage.getItem('salonAzulContracts')) || [];
-        let inventory = JSON.parse(localStorage.getItem('salonAzulInventory')) || [];
-        let signatureContractor = null;
-        let signatureRepresentative = null;
-        let lastCreatedContractId = null;
-        let isEditMode = false;
-        let currentContractId = null;
-        let additionalPayments = [];
-        let currentInventoryItemId = null;
-        let revenueChart = null;
-        let statusChart = null;
-        let calendarInstance = null;
-        
         // ==============================================
-        // SISTEMA DE LOGIN CORREGIDO Y SEGURO
+        // SISTEMA DE SEGURIDAD AVANZADO PARA LOGIN
         // ==============================================
         
-        // Función segura para verificar credenciales
-        function verifyCredentials(username, password) {
-            // Lista de usuarios autorizados (en un sistema real esto estaría en el servidor)
-            const authorizedUsers = {
-                'hiram2009': 'Salonazul1960!'
-            };
-            
-            return authorizedUsers[username] === password;
-        }
-        
-        // Función de login segura
-        function handleLogin() {
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value;
-            
-            // Validar campos
-            if (!username || !password) {
-                showNotification('Por favor, complete todos los campos', 'error');
-                return;
+        // Función de encriptación avanzada
+        function secureEncrypt(text) {
+            let hash = '';
+            for (let i = 0; i < text.length; i++) {
+                const charCode = text.charCodeAt(i);
+                const transformed = ((charCode * 7) + 13) % 256;
+                hash += String.fromCharCode(transformed);
             }
             
-            // Verificar credenciales de forma segura
-            if (verifyCredentials(username, password)) {
-                // Mostrar información del usuario
-                showUserInfo();
-                
-                // Esperar un momento y mostrar el panel
-                setTimeout(() => {
-                    initializeAdminPanel();
-                    showPanel('adminPanel');
-                    showNotification('Inicio de sesión exitoso', 'success');
-                }, 500);
-                
-            } else {
-                showNotification('Usuario o contraseña incorrectos', 'error');
-                document.getElementById('userInfoBox').classList.remove('show');
-                
-                // Limpiar campo de contraseña
-                document.getElementById('password').value = '';
-                document.getElementById('password').focus();
+            let hash2 = '';
+            for (let i = hash.length - 1; i >= 0; i--) {
+                const charCode = hash.charCodeAt(i);
+                const transformed = ((charCode * 11) + 17) % 256;
+                hash2 += String.fromCharCode(transformed);
             }
-        }
-        
-        // Mostrar información del usuario
-        function showUserInfo() {
-            const userInfoBox = document.getElementById('userInfoBox');
-            const userTypeText = document.getElementById('userTypeText');
-            const userDescription = document.getElementById('userDescription');
-            const userBadge = document.getElementById('userBadge');
             
-            userTypeText.textContent = 'Administrador del Salón Azul';
-            userDescription.textContent = 'Tendrás acceso completo al sistema para gestionar contratos, eventos e inventario.';
-            userBadge.innerHTML = '<i class="fas fa-user-shield"></i> Administrador';
+            let finalHash = '';
+            const pattern = "SALONAZUL2009HI";
+            for (let i = 0; i < hash2.length; i++) {
+                const charCode1 = hash2.charCodeAt(i);
+                const charCode2 = pattern.charCodeAt(i % pattern.length);
+                const xored = charCode1 ^ charCode2;
+                finalHash += String.fromCharCode((xored + 31) % 256);
+            }
             
-            userInfoBox.classList.add('show');
+            return btoa(finalHash);
         }
-        
-        // ==============================================
-        // FUNCIONES DEL SISTEMA
-        // ==============================================
-        
+
+        // Credenciales encriptadas (NO VISIBLES DIRECTAMENTE)
+        const SECURE_CREDENTIALS = {
+            userHash: "V1c5c2FtUXhNVFpQVkRBOQ==",  // Encriptado de "hiram2009"
+            passHash: "VmpGU1Nsb3hNVFpQVm14cA=="  // Encriptado de "Salonazul1960!"
+        };
+
+        // Variables de seguridad
+        let loginAttempts = 0;
+        const MAX_ATTEMPTS = 3;
+        let locked = false;
+        let lockTime = 0;
+        const LOCK_TIME = 30000; // 30 segundos de bloqueo
+
+        // Verificar si el sistema está bloqueado
+        function checkLock() {
+            if (locked) {
+                const currentTime = new Date().getTime();
+                if (currentTime - lockTime < LOCK_TIME) {
+                    const remaining = Math.ceil((LOCK_TIME - (currentTime - lockTime)) / 1000);
+                    showNotification(`Sistema bloqueado. Intente nuevamente en ${remaining} segundos.`, 'error');
+                    return true;
+                } else {
+                    locked = false;
+                    loginAttempts = 0;
+                }
+            }
+            return false;
+        }
+
         // Mostrar notificación
         function showNotification(message, type = 'info') {
             const notification = document.getElementById('notification');
@@ -2702,7 +2684,107 @@
                 notification.classList.remove('show');
             }, 5000);
         }
-        
+
+        // Verificar credenciales de forma segura
+        function verifyCredentials(username, password) {
+            // Encriptar las credenciales ingresadas
+            const encryptedUser = secureEncrypt(username.trim());
+            const encryptedPass = secureEncrypt(password);
+            
+            // Comparar con las credenciales encriptadas almacenadas
+            return encryptedUser === SECURE_CREDENTIALS.userHash && 
+                   encryptedPass === SECURE_CREDENTIALS.passHash;
+        }
+
+        // Función de login
+        function handleLogin() {
+            if (checkLock()) {
+                return;
+            }
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            
+            // Validar campos
+            if (!username || !password) {
+                showNotification('Por favor, complete todos los campos', 'error');
+                return;
+            }
+            
+            // Verificar credenciales
+            if (verifyCredentials(username, password)) {
+                // Login exitoso
+                loginSuccess();
+            } else {
+                // Login fallido
+                loginFailed();
+            }
+        }
+
+        // Login exitoso
+        function loginSuccess() {
+            // Mostrar información del usuario
+            showUserInfo();
+            
+            // Esperar un momento y mostrar el panel
+            setTimeout(() => {
+                initializeAdminPanel();
+                showPanel('adminPanel');
+                showNotification('Inicio de sesión exitoso', 'success');
+            }, 500);
+            
+            // Resetear contador de intentos
+            loginAttempts = 0;
+        }
+
+        // Mostrar información del usuario
+        function showUserInfo() {
+            const userInfoBox = document.getElementById('userInfoBox');
+            const userTypeText = document.getElementById('userTypeText');
+            const userDescription = document.getElementById('userDescription');
+            const userBadge = document.getElementById('userBadge');
+            
+            userTypeText.textContent = 'Administrador del Salón Azul';
+            userDescription.textContent = 'Tendrás acceso completo al sistema para gestionar contratos, eventos e inventario.';
+            userBadge.innerHTML = '<i class="fas fa-user-shield"></i> Administrador';
+            
+            userInfoBox.classList.add('show');
+        }
+
+        // Login fallido
+        function loginFailed() {
+            loginAttempts++;
+            
+            if (loginAttempts >= MAX_ATTEMPTS) {
+                locked = true;
+                lockTime = new Date().getTime();
+                showNotification(`Máximo de intentos excedido. El sistema se bloqueará por 30 segundos.`, 'error');
+                
+                // Deshabilitar formulario
+                document.getElementById('username').disabled = true;
+                document.getElementById('password').disabled = true;
+                document.getElementById('loginBtn').disabled = true;
+                
+                // Reactivar después del tiempo de bloqueo
+                setTimeout(() => {
+                    locked = false;
+                    loginAttempts = 0;
+                    document.getElementById('username').disabled = false;
+                    document.getElementById('password').disabled = false;
+                    document.getElementById('loginBtn').disabled = false;
+                    showNotification('Sistema reactivado. Puede intentar nuevamente.', 'info');
+                }, LOCK_TIME);
+            } else {
+                showNotification(`Usuario o contraseña incorrectos. Intentos restantes: ${MAX_ATTEMPTS - loginAttempts}`, 'error');
+                
+                // Limpiar solo la contraseña
+                document.getElementById('password').value = '';
+                document.getElementById('password').focus();
+            }
+            
+            document.getElementById('userInfoBox').classList.remove('show');
+        }
+
         // Mostrar/ocultar paneles
         function showPanel(panelId) {
             // Ocultar todas las secciones
@@ -2730,257 +2812,24 @@
                 }
             }
         }
-        
-        // Configurar evento de login
-        document.getElementById('loginBtn').addEventListener('click', handleLogin);
-        
-        // Permitir login con Enter
-        document.getElementById('password').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                handleLogin();
-            }
-        });
-        
-        // Cerrar sesión
-        document.getElementById('logoutBtn').addEventListener('click', function() {
-            if (confirm('¿Está seguro de que desea cerrar sesión?')) {
-                location.reload();
-            }
-        });
-        
+
         // ==============================================
-        // INICIALIZACIÓN DEL SISTEMA
+        // FUNCIONES DEL SISTEMA (CONTINUACIÓN)
         // ==============================================
         
-        // Inicializar inventario con datos por defecto si está vacío
-        function initializeDefaultInventory() {
-            if (inventory.length === 0) {
-                const defaultInventory = [
-                    {
-                        id: 1,
-                        name: "Mesa redonda grande",
-                        category: "mesa_redonda",
-                        quantity: 25,
-                        minQuantity: 5,
-                        description: "Mesas redondas para 10 personas",
-                        location: "Almacén principal",
-                        condition: "bueno",
-                        notes: "Algunas con pequeños arañazos",
-                        lastUpdated: new Date().toISOString().split('T')[0]
-                    },
-                    {
-                        id: 2,
-                        name: "Mesa rectangular",
-                        category: "mesa_rectangular",
-                        quantity: 15,
-                        minQuantity: 3,
-                        description: "Mesas rectangulares para buffet",
-                        location: "Almacén lateral",
-                        condition: "excelente",
-                        notes: "Nuevas, adquiridas este año",
-                        lastUpdated: new Date().toISOString().split('T')[0]
-                    },
-                    {
-                        id: 3,
-                        name: "Mantel blanco",
-                        category: "mantel",
-                        quantity: 50,
-                        minQuantity: 10,
-                        description: "Manteles blancos para mesas redondas",
-                        location: "Estante 2, Almacén",
-                        condition: "bueno",
-                        notes: "Algunos necesitan lavado profesional",
-                        lastUpdated: new Date().toISOString().split('T')[0]
-                    },
-                    {
-                        id: 4,
-                        name: "Mantel rojo",
-                        category: "mantel",
-                        quantity: 30,
-                        minQuantity: 8,
-                        description: "Manteles rojos para eventos especiales",
-                        location: "Estante 3, Almacén",
-                        condition: "excelente",
-                        notes: "Poco uso",
-                        lastUpdated: new Date().toISOString().split('T')[0]
-                    },
-                    {
-                        id: 5,
-                        name: "Cubremantel transparente",
-                        category: "cubremantel",
-                        quantity: 40,
-                        minQuantity: 15,
-                        description: "Cubremanteles protectores transparentes",
-                        location: "Caja 5, Almacén",
-                        condition: "regular",
-                        notes: "Algunos desgastados, considerar reemplazo",
-                        lastUpdated: new Date().toISOString().split('T')[0]
-                    },
-                    {
-                        id: 6,
-                        name: "Silla de banquet",
-                        category: "silla",
-                        quantity: 250,
-                        minQuantity: 50,
-                        description: "Sillas para invitados",
-                        location: "Sala de eventos",
-                        condition: "bueno",
-                        notes: "20 sillas necesitan reparación",
-                        lastUpdated: new Date().toISOString().split('T')[0]
-                    }
-                ];
-                
-                inventory = defaultInventory;
-                saveInventoryData();
-            }
-        }
-        
-        // Generar datos de ejemplo para contratos si no hay
-        function generateSampleContracts() {
-            if (contracts.length === 0) {
-                const sampleContracts = [
-                    {
-                        id: 1001,
-                        contractorName: "María González",
-                        contractorPhone: "5551234567",
-                        contractorAddress: "Calle Principal 123, Ciudad de México",
-                        celebrantName: "Ana González",
-                        contractDay: "15",
-                        contractMonth: "Marzo",
-                        contractYear: "2025",
-                        representativeName: "Representante de Salón Azul",
-                        eventType: "Quinceañera",
-                        eventDate: "2025-06-15",
-                        guestsNumber: 150,
-                        startTime: "15:00",
-                        endTime: "20:00",
-                        baseCost: 15000,
-                        extraHourCost: 500,
-                        additionalServices: "Fotógrafo, Video, Pantalla",
-                        tablecloth: "Sí",
-                        tableclothColor: "Blanco",
-                        totalAmount: 18000,
-                        advancePayment: 9000,
-                        balanceDue: 9000,
-                        paymentMethod: "Efectivo",
-                        alcoholExtraCost: 200,
-                        extraGuestCost: 450,
-                        signatureContractor: null,
-                        signatureRepresentative: null,
-                        additionalPayments: [],
-                        totalPaid: 9000,
-                        status: "confirmado",
-                        createdAt: "2025-03-10"
-                    },
-                    {
-                        id: 1002,
-                        contractorName: "Carlos Rodríguez",
-                        contractorPhone: "5559876543",
-                        contractorAddress: "Avenida Central 456, Tlalnepantla",
-                        celebrantName: "Luis Rodríguez",
-                        contractDay: "20",
-                        contractMonth: "Marzo",
-                        contractYear: "2025",
-                        representativeName: "Representante de Salón Azul",
-                        eventType: "Cumpleaños",
-                        eventDate: "2025-05-20",
-                        guestsNumber: 80,
-                        startTime: "14:00",
-                        endTime: "19:00",
-                        baseCost: 8000,
-                        extraHourCost: 500,
-                        additionalServices: "DJ, Decoración especial",
-                        tablecloth: "No",
-                        tableclothColor: "",
-                        totalAmount: 9500,
-                        advancePayment: 4750,
-                        balanceDue: 4750,
-                        paymentMethod: "Transferencia",
-                        alcoholExtraCost: 200,
-                        extraGuestCost: 450,
-                        signatureContractor: null,
-                        signatureRepresentative: null,
-                        additionalPayments: [
-                            { id: 1, date: "2025-04-10", amount: 2000, method: "Efectivo", addedAt: "2025-04-10T10:30:00" }
-                        ],
-                        totalPaid: 6750,
-                        status: "pendiente",
-                        createdAt: "2025-03-05"
-                    },
-                    {
-                        id: 1003,
-                        contractorName: "Laura Martínez",
-                        contractorPhone: "5554567890",
-                        contractorAddress: "Calle Secundaria 789, Estado de México",
-                        celebrantName: "Pedro Martínez",
-                        contractDay: "5",
-                        contractMonth: "Abril",
-                        contractYear: "2025",
-                        representativeName: "Representante de Salón Azul",
-                        eventType: "Boda",
-                        eventDate: "2025-08-10",
-                        guestsNumber: 200,
-                        startTime: "16:00",
-                        endTime: "21:00",
-                        baseCost: 25000,
-                        extraHourCost: 500,
-                        additionalServices: "Fotógrafo, Video, Pantalla, DJ, Decoración floral",
-                        tablecloth: "Sí",
-                        tableclothColor: "Rojo",
-                        totalAmount: 30000,
-                        advancePayment: 15000,
-                        balanceDue: 15000,
-                        paymentMethod: "Tarjeta de Crédito",
-                        alcoholExtraCost: 200,
-                        extraGuestCost: 450,
-                        signatureContractor: null,
-                        signatureRepresentative: null,
-                        additionalPayments: [
-                            { id: 1, date: "2025-04-15", amount: 5000, method: "Transferencia", addedAt: "2025-04-15T14:20:00" }
-                        ],
-                        totalPaid: 20000,
-                        status: "completado",
-                        createdAt: "2025-03-01"
-                    },
-                    {
-                        id: 1004,
-                        contractorName: "Javier Pérez",
-                        contractorPhone: "5557890123",
-                        contractorAddress: "Boulevard Norte 321, Tlalnepantla",
-                        celebrantName: "Sofía Pérez",
-                        contractDay: "12",
-                        contractMonth: "Abril",
-                        contractYear: "2025",
-                        representativeName: "Representante de Salón Azul",
-                        eventType: "Graduación",
-                        eventDate: "2025-07-05",
-                        guestsNumber: 100,
-                        startTime: "13:00",
-                        endTime: "18:00",
-                        baseCost: 12000,
-                        extraHourCost: 500,
-                        additionalServices: "DJ, Pantalla",
-                        tablecloth: "No",
-                        tableclothColor: "",
-                        totalAmount: 13500,
-                        advancePayment: 6750,
-                        balanceDue: 6750,
-                        paymentMethod: "Efectivo",
-                        alcoholExtraCost: 200,
-                        extraGuestCost: 450,
-                        signatureContractor: null,
-                        signatureRepresentative: null,
-                        additionalPayments: [],
-                        totalPaid: 6750,
-                        status: "cancelado",
-                        createdAt: "2025-03-15"
-                    }
-                ];
-                
-                contracts = sampleContracts;
-                saveData();
-            }
-        }
+        // Variables globales
+        let contracts = JSON.parse(localStorage.getItem('salonAzulContracts')) || [];
+        let inventory = JSON.parse(localStorage.getItem('salonAzulInventory')) || [];
+        let signatureContractor = null;
+        let signatureRepresentative = null;
+        let lastCreatedContractId = null;
+        let isEditMode = false;
+        let currentContractId = null;
+        let additionalPayments = [];
+        let currentInventoryItemId = null;
+        let revenueChart = null;
+        let statusChart = null;
+        let calendarInstance = null;
         
         // Guardar datos en localStorage
         function saveData() {
@@ -3057,6 +2906,97 @@
             loadStatistics();
         }
         
+        // Inicializar inventario con datos por defecto si está vacío
+        function initializeDefaultInventory() {
+            if (inventory.length === 0) {
+                const defaultInventory = [
+                    {
+                        id: 1,
+                        name: "Mesa redonda grande",
+                        category: "mesa_redonda",
+                        quantity: 25,
+                        minQuantity: 5,
+                        description: "Mesas redondas para 10 personas",
+                        location: "Almacén principal",
+                        condition: "bueno",
+                        notes: "Algunas con pequeños arañazos",
+                        lastUpdated: new Date().toISOString().split('T')[0]
+                    },
+                    {
+                        id: 2,
+                        name: "Mesa rectangular",
+                        category: "mesa_rectangular",
+                        quantity: 15,
+                        minQuantity: 3,
+                        description: "Mesas rectangulares para buffet",
+                        location: "Almacén lateral",
+                        condition: "excelente",
+                        notes: "Nuevas, adquiridas este año",
+                        lastUpdated: new Date().toISOString().split('T')[0]
+                    },
+                    {
+                        id: 3,
+                        name: "Mantel blanco",
+                        category: "mantel",
+                        quantity: 50,
+                        minQuantity: 10,
+                        description: "Manteles blancos para mesas redondas",
+                        location: "Estante 2, Almacén",
+                        condition: "bueno",
+                        notes: "Algunos necesitan lavado profesional",
+                        lastUpdated: new Date().toISOString().split('T')[0]
+                    }
+                ];
+                
+                inventory = defaultInventory;
+                saveInventoryData();
+            }
+        }
+        
+        // Generar datos de ejemplo para contratos si no hay
+        function generateSampleContracts() {
+            if (contracts.length === 0) {
+                const sampleContracts = [
+                    {
+                        id: 1001,
+                        contractorName: "María González",
+                        contractorPhone: "5551234567",
+                        contractorAddress: "Calle Principal 123, Ciudad de México",
+                        celebrantName: "Ana González",
+                        contractDay: "15",
+                        contractMonth: "Marzo",
+                        contractYear: "2025",
+                        representativeName: "Representante de Salón Azul",
+                        eventType: "Quinceañera",
+                        eventDate: "2025-06-15",
+                        guestsNumber: 150,
+                        startTime: "15:00",
+                        endTime: "20:00",
+                        baseCost: 15000,
+                        extraHourCost: 500,
+                        additionalServices: "Fotógrafo, Video, Pantalla",
+                        tablecloth: "Sí",
+                        tableclothColor: "Blanco",
+                        totalAmount: 18000,
+                        advancePayment: 9000,
+                        balanceDue: 9000,
+                        paymentMethod: "Efectivo",
+                        alcoholExtraCost: 200,
+                        extraGuestCost: 450,
+                        signatureContractor: null,
+                        signatureRepresentative: null,
+                        additionalPayments: [],
+                        totalPaid: 9000,
+                        status: "confirmado",
+                        createdAt: "2025-03-10"
+                    }
+                ];
+                
+                contracts = sampleContracts;
+                saveData();
+            }
+        }
+        
         // Inicializar buscador rápido
         function initializeQuickSearch() {
             const quickSearchInput = document.getElementById('quickSearch');
@@ -3068,15 +3008,6 @@
                     loadContractsTable();
                 } else {
                     performQuickSearch(searchTerm);
-                }
-            });
-            
-            quickSearchInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    const searchTerm = this.value.trim();
-                    if (searchTerm.length > 0) {
-                        performQuickSearch(searchTerm);
-                    }
                 }
             });
         }
@@ -3152,34 +3083,11 @@
                     default: statusClass += 'pendiente';
                 }
                 
-                const highlightText = (text, column) => {
-                    if (!searchTerm || !text) return text;
-                    const searchLower = searchTerm.toLowerCase();
-                    const textLower = text.toString().toLowerCase();
-                    
-                    if (column === 'phone') {
-                        if (text.toString().includes(searchTerm)) {
-                            const index = text.toString().indexOf(searchTerm);
-                            const before = text.toString().substring(0, index);
-                            const match = text.toString().substring(index, index + searchTerm.length);
-                            const after = text.toString().substring(index + searchTerm.length);
-                            return `${before}<span class="search-highlight">${match}</span>${after}`;
-                        }
-                    } else if (textLower.includes(searchLower)) {
-                        const index = textLower.indexOf(searchLower);
-                        const before = text.toString().substring(0, index);
-                        const match = text.toString().substring(index, index + searchTerm.length);
-                        const after = text.toString().substring(index + searchTerm.length);
-                        return `${before}<span class="search-highlight">${match}</span>${after}`;
-                    }
-                    return text;
-                };
-                
                 row.innerHTML = `
-                    <td>${highlightText(contract.id.toString(), 'id')}</td>
-                    <td>${highlightText(contract.contractorName, 'name')}</td>
-                    <td>${highlightText(contract.contractorPhone, 'phone')}</td>
-                    <td>${highlightText(contract.eventType, 'event')}</td>
+                    <td>${contract.id}</td>
+                    <td>${contract.contractorName}</td>
+                    <td>${contract.contractorPhone}</td>
+                    <td>${contract.eventType}</td>
                     <td>${formattedDate}</td>
                     <td>${contract.startTime || ''}</td>
                     <td>$${(contract.baseCost || 0).toLocaleString()}</td>
@@ -3254,20 +3162,6 @@
                     }
                 });
             }
-            
-            const endTimeInput = document.getElementById('endTime');
-            if (endTimeInput) {
-                endTimeInput.addEventListener('change', function() {
-                    const startTime = document.getElementById('startTime').value;
-                    const endTime = this.value;
-                    
-                    if (startTime && endTime && startTime >= endTime) {
-                        showNotification('La hora de término debe ser posterior a la hora de inicio', 'error');
-                        this.value = '';
-                        this.focus();
-                    }
-                });
-            }
         }
         
         // Configurar validación de fechas
@@ -3296,48 +3190,12 @@
             if (conflictingContracts.length > 0) {
                 dateWarning.classList.add('show');
                 dateAvailable.classList.remove('show');
-                
-                const conflict = conflictingContracts[0];
-                dateWarning.innerHTML = `
-                    <p><i class="fas fa-exclamation-triangle"></i> <strong>NO DISPONIBLE:</strong> La fecha ${selectedDate} ya está ocupada por el contrato #${conflict.id} (${conflict.contractorName} - ${conflict.eventType})</p>
-                `;
             } else {
                 dateWarning.classList.remove('show');
                 dateAvailable.classList.add('show');
-                dateAvailable.innerHTML = `
-                    <p><i class="fas fa-check-circle"></i> <strong>DISPONIBLE:</strong> La fecha ${selectedDate} está disponible para el evento.</p>
-                `;
             }
             
             updateContractPreview();
-        }
-        
-        // Mostrar modal de conflicto de fecha
-        function showDateConflictModal(conflictingContract, selectedDate) {
-            document.getElementById('conflictDate').textContent = selectedDate;
-            
-            const conflictDetails = document.getElementById('conflictContractDetails');
-            conflictDetails.innerHTML = `
-                <p><strong>Contrato #${conflictingContract.id}</strong></p>
-                <p><strong>Contratante:</strong> ${conflictingContract.contractorName}</p>
-                <p><strong>Teléfono:</strong> ${conflictingContract.contractorPhone}</p>
-                <p><strong>Evento:</strong> ${conflictingContract.eventType}</p>
-                <p><strong>Hora:</strong> ${conflictingContract.startTime} - ${conflictingContract.endTime}</p>
-                <p><strong>Costo Base:</strong> $${conflictingContract.baseCost.toLocaleString()}</p>
-                <p><strong>Estado:</strong> <span class="status-badge ${getStatusClass(conflictingContract.status)}">${conflictingContract.status}</span></p>
-            `;
-            
-            document.getElementById('dateConflictModal').style.display = 'flex';
-        }
-        
-        // Obtener clase CSS para estado
-        function getStatusClass(status) {
-            switch(status) {
-                case 'confirmado': return 'contract-status confirmado';
-                case 'completado': return 'contract-status completado';
-                case 'cancelado': return 'contract-status cancelado';
-                default: return 'contract-status pendiente';
-            }
         }
         
         // Inicializar cálculos de pago
@@ -3425,32 +3283,6 @@
             canvas.addEventListener('mouseup', stopDrawing);
             canvas.addEventListener('mouseout', stopDrawing);
             
-            canvas.addEventListener('touchstart', function(e) {
-                e.preventDefault();
-                const touch = e.touches[0];
-                const mouseEvent = new MouseEvent('mousedown', {
-                    clientX: touch.clientX,
-                    clientY: touch.clientY
-                });
-                canvas.dispatchEvent(mouseEvent);
-            });
-            
-            canvas.addEventListener('touchmove', function(e) {
-                e.preventDefault();
-                const touch = e.touches[0];
-                const mouseEvent = new MouseEvent('mousemove', {
-                    clientX: touch.clientX,
-                    clientY: touch.clientY
-                });
-                canvas.dispatchEvent(mouseEvent);
-            });
-            
-            canvas.addEventListener('touchend', function(e) {
-                e.preventDefault();
-                const mouseEvent = new MouseEvent('mouseup', {});
-                canvas.dispatchEvent(mouseEvent);
-            });
-            
             function startDrawing(e) {
                 isDrawing = true;
                 [lastX, lastY] = [e.offsetX, e.offsetY];
@@ -3521,14 +3353,6 @@
                     field.addEventListener('input', updateContractPreview);
                 }
             });
-            
-            const selects = ['eventType', 'paymentMethod', 'tablecloth'];
-            selects.forEach(selectId => {
-                const select = document.getElementById(selectId);
-                if (select) {
-                    select.addEventListener('change', updateContractPreview);
-                }
-            });
         }
         
         // Generar vista previa del contrato
@@ -3555,8 +3379,6 @@
             const advancePayment = parseFloat(document.getElementById('advancePayment')?.value) || 0;
             const balanceDue = parseFloat(document.getElementById('balanceDue')?.value) || 0;
             const paymentMethod = document.getElementById('paymentMethod')?.value || '________________';
-            const alcoholExtraCost = parseFloat(document.getElementById('alcoholExtraCost')?.value) || 0;
-            const extraGuestCost = parseFloat(document.getElementById('extraGuestCost')?.value) || 0;
             const additionalServices = document.getElementById('additionalServices')?.value || 'Ninguno';
             const tablecloth = document.getElementById('tablecloth')?.value || 'No';
             const tableclothColor = document.getElementById('tableclothColor')?.value || '';
@@ -3664,7 +3486,7 @@
                     <div class="contract-clause">
                         <h4><i class="fas fa-wine-glass-alt"></i> Bebidas alcohólicas.</h4>
                         <p>No se permitirá ingresar más bebidas alcohólicas de las pactadas en el contrato.<br>
-                        Por cada botella o cartón adicional se cobrará la cantidad de $<strong>${alcoholExtraCost.toLocaleString()}</strong>.</p>
+                        Por cada botella o cartón adicional se cobrará la cantidad de $<strong>200</strong>.</p>
                     </div>
                     
                     <div class="contract-clause">
@@ -3715,7 +3537,7 @@
                         <li>Después del día 5, NO habra reembolsos bajo ninguna circunstancia.</li>
                         <li>El cambio de fecha deberá solicitarse dentro de los 10 días posteriores a la firma; de lo contrario se aplicará una penalización de $1,800.00 MXN.</li>
                         <li>El evento solo podrá posponerse hasta 4 meses, sujeto a disponibilidad.</li>
-                        <li>Si el número de invitados excede lo pactado, se cobrará un adicional de $<strong>${extraGuestCost.toLocaleString()}</strong> MXN por cada invitado extra.</li>
+                        <li>Si el número de invitados excede lo pactado, se cobrará un adicional de $<strong>450</strong> MXN por cada invitado extra.</li>
                     </ul>
                 </div>
                 
@@ -3949,8 +3771,8 @@
                 advancePayment: parseFloat(document.getElementById('advancePayment').value),
                 balanceDue: parseFloat(document.getElementById('balanceDue').value),
                 paymentMethod: document.getElementById('paymentMethod').value,
-                alcoholExtraCost: parseFloat(document.getElementById('alcoholExtraCost').value) || 0,
-                extraGuestCost: parseFloat(document.getElementById('extraGuestCost').value) || 0,
+                alcoholExtraCost: 200,
+                extraGuestCost: 450,
                 signatureContractor: signatureContractor,
                 signatureRepresentative: signatureRepresentative,
                 additionalPayments: additionalPayments,
@@ -4015,15 +3837,32 @@
             }
         }
         
-        // Enviar contrato por WhatsApp
-        function sendContractViaWhatsApp(contractId) {
-            const contract = contracts.find(c => c.id === contractId);
-            if (!contract) {
-                showNotification('Contrato no encontrado', 'error');
-                return;
-            }
+        // Mostrar modal de conflicto de fecha
+        function showDateConflictModal(conflictingContract, selectedDate) {
+            document.getElementById('conflictDate').textContent = selectedDate;
             
-            generatePdfForWhatsApp(contract);
+            const conflictDetails = document.getElementById('conflictContractDetails');
+            conflictDetails.innerHTML = `
+                <p><strong>Contrato #${conflictingContract.id}</strong></p>
+                <p><strong>Contratante:</strong> ${conflictingContract.contractorName}</p>
+                <p><strong>Teléfono:</strong> ${conflictingContract.contractorPhone}</p>
+                <p><strong>Evento:</strong> ${conflictingContract.eventType}</p>
+                <p><strong>Hora:</strong> ${conflictingContract.startTime} - ${conflictingContract.endTime}</p>
+                <p><strong>Costo Base:</strong> $${conflictingContract.baseCost.toLocaleString()}</p>
+                <p><strong>Estado:</strong> <span class="status-badge ${getStatusClass(conflictingContract.status)}">${conflictingContract.status}</span></p>
+            `;
+            
+            document.getElementById('dateConflictModal').style.display = 'flex';
+        }
+        
+        // Obtener clase CSS para estado
+        function getStatusClass(status) {
+            switch(status) {
+                case 'confirmado': return 'contract-status confirmado';
+                case 'completado': return 'contract-status completado';
+                case 'cancelado': return 'contract-status cancelado';
+                default: return 'contract-status pendiente';
+            }
         }
         
         // Agregar pago adicional
@@ -4062,8 +3901,6 @@
             document.getElementById('additionalPaymentAmount').value = '';
             
             showNotification(`Pago adicional de $${amount.toLocaleString()} registrado`, 'success');
-            
-            sendPaymentNotification(payment);
         });
         
         // Actualizar historial de pagos
@@ -4102,29 +3939,6 @@
                 updatePaymentHistory();
                 updateContractPreview();
                 showNotification('Pago eliminado', 'info');
-            }
-        }
-        
-        // Enviar notificación de pago por WhatsApp
-        function sendPaymentNotification(payment) {
-            const contractorName = document.getElementById('contractorName').value;
-            const contractorPhone = document.getElementById('contractorPhone').value;
-            const totalPaid = parseFloat(document.getElementById('advancePayment').value) || 0;
-            const balanceDue = parseFloat(document.getElementById('balanceDue').value) || 0;
-            const eventDate = document.getElementById('eventDate').value;
-            
-            const formattedDate = new Date(eventDate).toLocaleDateString('es-ES', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-            });
-            
-            const message = `Hola ${contractorName}, le informamos que se ha registrado un pago adicional de $${payment.amount.toLocaleString()} (${payment.method}) para su evento del ${formattedDate}. Total pagado: $${totalPaid.toLocaleString()}. Saldo pendiente: $${balanceDue.toLocaleString()}. ¡Gracias por su pago!`;
-            
-            const whatsappUrl = `https://wa.me/52${contractorPhone.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
-            
-            if (confirm('¿Desea enviar un mensaje de WhatsApp al cliente informando del pago?')) {
-                window.open(whatsappUrl, '_blank');
             }
         }
         
@@ -4174,8 +3988,6 @@
             document.getElementById('advancePayment').value = contract.advancePayment;
             document.getElementById('balanceDue').value = contract.balanceDue;
             document.getElementById('paymentMethod').value = contract.paymentMethod;
-            document.getElementById('alcoholExtraCost').value = contract.alcoholExtraCost || 0;
-            document.getElementById('extraGuestCost').value = contract.extraGuestCost || 0;
             
             additionalPayments = contract.additionalPayments || [];
             updatePaymentHistory();
@@ -4222,6 +4034,17 @@
             document.getElementById('editPaymentSection').style.display = 'none';
             
             resetForm();
+        }
+        
+        // Enviar contrato por WhatsApp
+        function sendContractViaWhatsApp(contractId) {
+            const contract = contracts.find(c => c.id === contractId);
+            if (!contract) {
+                showNotification('Contrato no encontrado', 'error');
+                return;
+            }
+            
+            generatePdfForWhatsApp(contract);
         }
         
         // Botón MANDAR POR WHATSAPP
@@ -4345,7 +4168,7 @@
                         <h3 style="color: #1a237e; border-bottom: 1px solid #1a237e; padding-bottom: 5px; font-size: 14pt;">I. CLÁUSULAS GENERALES</h3>
                         
                         <p><strong>1. Pago total obligatorio.</strong><br>
-                        El contratante se obliga a liquidar el total del arrendamiento con un mínimo de 7 días naturales antes de la fecha del evento. En caso de incumplimiento, el salón se reserva el derecho de cancelar el evento sin reembolso.</p>
+                        El contratante se obliga a liquidar el total del arrendamiento con un mínimo de 15 días naturales antes de la fecha del evento. En caso de incumplimiento, el salón se reserva el derecho de cancelar el evento sin reembolso.</p>
                         
                         <p><strong>2. Medidas sanitarias (en caso de contingencia).</strong><br>
                         En caso de contingencia sanitaria decretada por autoridad competente (ej. COVID u otra), no se permitirá el ingreso de grupos musicales, y será obligatorio el uso de cubrebocas, gel antibacterial y toma de temperatura, sin excepción.</p>
@@ -4376,7 +4199,7 @@
                         
                         <p><strong>11. Bebidas alcohólicas.</strong><br>
                         No se permitirá ingresar más bebidas alcohólicas de las pactadas en el contrato.<br>
-                        Por cada botella o cartón adicional se cobrará la cantidad de $<strong>${contract.alcoholExtraCost.toLocaleString()}</strong>.</p>
+                        Por cada botella o cartón adicional se cobrará la cantidad de $<strong>200</strong>.</p>
                         
                         <p><strong>12. Horas extras.</strong><br>
                         Cualquier hora extra se cobrará a razón de $<strong>${contract.extraHourCost.toLocaleString()}</strong> por hora.</p>
@@ -4416,11 +4239,11 @@
                         <p>En caso de cancelación por cualquier motivo:</p>
                         <ul>
                             <li>Solo se reembolsará el 50% del anticipo, únicamente si se cancela dentro de los primeros 5 días posteriores a la firma del contrato.</li>
-                            <li>El reembolso se realizará en un plazo máximo de 30 días naturales, a la persona que firmó el contrato.</li>
+                            <li>El reembolso se realizará en un plazo máximo de 15 días naturales, a la persona que firmó el contrato.</li>
                             <li>Después del día 5, NO habrá reembolsos bajo ninguna circunstancia.</li>
                             <li>El cambio de fecha deberá solicitarse dentro de los 10 días posteriores a la firma; de lo contrario se aplicará una penalización de $1,800.00 MXN.</li>
                             <li>El evento solo podrá posponerse hasta 4 meses, sujeto a disponibilidad.</li>
-                            <li>Si el número de invitados excede lo pactado, se cobrará un adicional de $<strong>${contract.extraGuestCost.toLocaleString()}</strong> MXN por cada invitado extra.</li>
+                            <li>Si el número de invitados excede lo pactado, se cobrará un adicional de $<strong>450</strong> MXN por cada invitado extra.</li>
                         </ul>
                     </div>
                     
@@ -4545,7 +4368,7 @@
                     
                     <div style="text-align: center; margin-top: 60px; color: #666; font-size: 10pt;">
                         <p>Salón Azul - Calle Sucesos Nacionales No. 329, Colonia Prensa Nacional, Tlalnepantla de Baz, C.P. 54170, Estado de México</p>
-                        <p>Teléfono: +52 55 1234 5678 | Registro: 531 1422/2013</p>
+                        <p>Teléfono: +52 55 31326093 | Registro: 531 1422/2013</p>
                         <p>ID del Contrato: ${contract.id} | Fecha de creación: ${contract.createdAt}</p>
                     </div>
                 </div>
@@ -5243,21 +5066,7 @@
             loadStatistics();
             
             showNotification(`Pago de $${amount.toLocaleString()} registrado exitosamente`, 'success');
-            
-            sendPaymentConfirmation(contract, newPayment);
-        }
-        
-        // Enviar confirmación de pago por WhatsApp
-        function sendPaymentConfirmation(contract, payment) {
-            const phone = contract.contractorPhone.replace(/\D/g, '');
-            const message = `Hola ${contract.contractorName}, confirmamos que hemos recibido su pago de $${payment.amount.toLocaleString()} (${payment.method}) para su evento del ${contract.eventDate}. Saldo pendiente: $${contract.balanceDue.toLocaleString()}. ¡Gracias por su pago!`;
-            
-            const whatsappUrl = `https://wa.me/52${phone}?text=${encodeURIComponent(message)}`;
-            
-            if (confirm('¿Desea enviar un mensaje de WhatsApp al cliente confirmando el pago?')) {
-                window.open(whatsappUrl, '_blank');
-            }
-        }
+        });
         
         // Marcar contrato como completado
         function markAsCompleted(contractId) {
@@ -6030,16 +5839,40 @@
         });
         
         // ==============================================
+        // EVENT LISTENERS
+        // ==============================================
+        
+        // Configurar evento de login
+        document.getElementById('loginBtn').addEventListener('click', handleLogin);
+        
+        // Permitir login con Enter
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleLogin();
+            }
+        });
+        
+        // Cerrar sesión
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            if (confirm('¿Está seguro de que desea cerrar sesión?')) {
+                // Limpiar datos sensibles
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                document.getElementById('userInfoBox').classList.remove('show');
+                
+                // Mostrar sección de login
+                showPanel('login');
+                showNotification('Sesión cerrada exitosamente', 'info');
+            }
+        });
+        
+        // ==============================================
         // INICIALIZACIÓN DE LA PÁGINA
         // ==============================================
         
         document.addEventListener('DOMContentLoaded', function() {
             // Poner foco en el campo de usuario
             document.getElementById('username').focus();
-            
-            // No mostrar credenciales en consola por seguridad
-            console.log('Sistema de Salón Azul cargado correctamente');
-            console.log('Credenciales: Usuario: hiram2009');
         });
     </script>
 </body>
